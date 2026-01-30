@@ -1,0 +1,57 @@
+/* Main container styling */
+.stApp {
+    background: linear-gradient(135deg, #1a1c24 0%, #0f1016 100%);
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Sidebar styling */
+[data-testid="stSidebar"] {
+    background-color: rgba(25, 27, 36, 0.95);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Headers */
+h1, h2, h3 {
+    font-family: 'Outfit', sans-serif;
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+}
+
+/* File Uploader Customization */
+[data-testid="stFileUploader"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(79, 172, 254, 0.5);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+[data-testid="stFileUploader"]:hover {
+    border-color: #4facfe;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* DataFrame/Table styling */
+[data-testid="stDataFrame"] {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Metric Cards */
+div[data-testid="metric-container"] {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s ease;
+}
+
+div[data-testid="metric-container"]:hover {
+    transform: translateY(-2px);
+    border-color: #4facfe;
+}
