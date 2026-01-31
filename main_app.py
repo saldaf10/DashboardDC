@@ -65,7 +65,7 @@ if uploaded_file is not None:
         show_num = st.sidebar.checkbox("📈 Análisis Cuantitativo", value=True)
         show_rel = st.sidebar.checkbox("🔗 Relaciones", value=True)
         show_time = st.sidebar.checkbox("📅 Series de Tiempo", value=True)
-        show_ai = st.sidebar.checkbox("🤖 Asistente IA", value=False)
+        show_ai = st.sidebar.checkbox("🤖 Asistente IA", value=True)
         
         # --- HEADER ---
         st.title("📊 Dashboard de Análisis Exploratorio")
