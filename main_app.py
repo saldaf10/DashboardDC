@@ -7,8 +7,8 @@ import io
 
 # Page Configuration
 st.set_page_config(
-    page_title="Dashboard Energía Renovable",
-    page_icon="⚡",
+    page_title="AI Data Dashboard",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -23,44 +23,45 @@ try:
 except FileNotFoundError:
     st.warning("Archivo style.css no encontrado. Asegúrate de que esté en el mismo directorio.")
 
-# Helper function to find columns
-def get_column_by_keyword(df, keywords):
-    for col in df.columns:
-        if any(keyword.lower() in col.lower() for keyword in keywords):
-            return col
-    return None
-
 # Sidebar
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3109/3109838.png", width=80)
-    st.title("⚡ EnergíaDashboard")
+    st.image("https://cdn-icons-png.flaticon.com/512/2920/2920326.png", width=80)
+    st.title("📊 DataInsight")
     st.markdown("---")
-    st.header("📂 Configuración")
-    uploaded_file = st.file_uploader("Cargar archivo CSV", type=['csv'])
+    st.header("📂 1. Carga de Datos")
+    uploaded_file = st.file_uploader("Sube tu archivo CSV", type=['csv'])
     
-    st.markdown("### Información del Sistema")
-    st.info("Sube tu archivo para ver el análisis automático.")
+    st.markdown("### ⚙️ 2. Configuración CSV")
+    separator = st.selectbox("Separador", [",", ";", "|", "\\t"], index=0)
+    encoding_opt = st.selectbox("Codificación", ["utf-8", "latin-1", "ISO-8859-1", "cp1252"], index=0)
+
     st.markdown("---")
-    st.caption("Desarrollado con Streamlit & Plotly")
+    st.caption("Sistema de Análisis Universal con Streamlit")
 
 # Main Logic
 if uploaded_file is not None:
     try:
-        # Read the file
-        df = pd.read_csv(uploaded_file)
+        # Read the file with user settings
+        df = pd.read_csv(uploaded_file, sep=separator, encoding=encoding_opt)
         
         # --- HEADER ---
-        st.title("⚡ Dashboard de Análisis Energético")
+        st.title("📊 Dashboard de Análisis Exploratorio")
         st.markdown(f"""
         <div style='background-color: rgba(79, 172, 254, 0.1); padding: 1rem; border-radius: 10px; border-left: 5px solid #4facfe; margin-bottom: 2rem;'>
             <p style='margin: 0; font-size: 1.1rem;'>
-                Analizando archivo: <b>{uploaded_file.name}</b> | Registros: <b>{len(df)}</b>
+                Analizando: <b>{uploaded_file.name}</b> | Registros: <b>{len(df)}</b> | Columnas: <b>{len(df.columns)}</b>
             </p>
         </div>
         """, unsafe_allow_html=True)
 
         # --- TABS DE NAVEGACIÓN ---
-        tab1, tab2, tab3, tab4 = st.tabs(["📋 General", "📊 Análisis Cualitativo", "📈 Análisis Cuantitativo", "🔗 Relaciones"])
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "📋 General", 
+            "📊 Análisis Cualitativo", 
+            "📈 Análisis Cuantitativo", 
+            "🔗 Relaciones",
+            "📅 Series de Tiempo"
+        ])
         
         # === TAB 1: GENERAL ===
         with tab1:
@@ -97,7 +98,7 @@ if uploaded_file is not None:
             if cat_cols:
                 col_sel, col_display = st.columns([1, 3])
                 with col_sel:
-                    selected_cat_col = st.selectbox("Selecciona una columna:", cat_cols)
+                    selected_cat_col = st.selectbox("Selecciona una columna (Categoría):", cat_cols)
                     
                     st.markdown("#### Estadísticas")
                     st.write(df[selected_cat_col].describe())
@@ -109,10 +110,13 @@ if uploaded_file is not None:
                         # Bar Chart
                         counts = df[selected_cat_col].value_counts().reset_index()
                         counts.columns = ['Valor', 'Frecuencia']
+                        # Limit to top 20 for readability
+                        counts = counts.head(20)
+                        
                         fig_bar = px.bar(
                             counts, x='Valor', y='Frecuencia', 
                             color='Frecuencia',
-                            title=f"Distribución: {selected_cat_col}",
+                            title=f"Top Distribución: {selected_cat_col} (Max 20)",
                             color_continuous_scale=px.colors.sequential.Bluered
                         )
                         fig_bar.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
@@ -205,17 +209,79 @@ if uploaded_file is not None:
                 st.plotly_chart(fig_scatter, use_container_width=True)
             else:
                 st.info("Se necesitan al menos 2 columnas numéricas para analizar correlaciones.")
+        
+        # === TAB 5: SERIES DE TIEMPO ===
+        with tab5:
+            st.markdown("### 📅 Análisis Temporal")
             
+            # Intentar detectar columnas de fecha
+            possible_date_cols = [col for col in df.columns if 'date' in col.lower() or 'fecha' in col.lower() or 'time' in col.lower() or 'año' in col.lower()]
+            all_cols = df.columns.tolist()
+            
+            c_sel_date, c_display_time = st.columns([1, 3])
+            
+            with c_sel_date:
+                date_col = st.selectbox(
+                    "Selecciona Columna de Fecha/Tiempo:", 
+                    options=all_cols, 
+                    index=all_cols.index(possible_date_cols[0]) if possible_date_cols else 0
+                )
+                st.info("Intenta seleccionar una columna que contenga fechas (YYYY-MM-DD) o años.")
+
+            with c_display_time:
+                try:
+                    # Copy df to avoid affecting other tabs
+                    df_time = df.copy()
+                    df_time[date_col] = pd.to_datetime(df_time[date_col], errors='coerce')
+                    
+                    # Drop invalid dates
+                    df_time = df_time.dropna(subset=[date_col])
+                    
+                    if not df_time.empty:
+                        df_time = df_time.sort_values(by=date_col)
+                        
+                        st.write(f"Rango de Fechas detectado: **{df_time[date_col].min().date()}** a **{df_time[date_col].max().date()}**")
+                        
+                        # Time Series Plot
+                        num_cols_time = df_time.select_dtypes(include=['number']).columns.tolist()
+                        if num_cols_time:
+                            y_col_time = st.selectbox("Variable a graficar en el tiempo:", num_cols_time)
+                            
+                            # Aggregation
+                            agg_type = st.radio("Agregación:", ["Sin Agrupar", "Promedio Mensual", "Suma Mensual"], horizontal=True)
+                            
+                            if agg_type == "Promedio Mensual":
+                                df_plot = df_time.set_index(date_col).resample('M')[y_col_time].mean().reset_index()
+                            elif agg_type == "Suma Mensual":
+                                df_plot = df_time.set_index(date_col).resample('M')[y_col_time].sum().reset_index()
+                            else:
+                                df_plot = df_time
+                                
+                            fig_line = px.line(
+                                df_plot, x=date_col, y=y_col_time,
+                                title=f"Evolución de {y_col_time}",
+                                markers=True
+                            )
+                            fig_line.update_traces(line_color='#00f2fe', line_width=2)
+                            fig_line.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                            st.plotly_chart(fig_line, use_container_width=True)
+                        else:
+                            st.warning("No hay columnas numéricas para graficar en el tiempo.")
+                    else:
+                        st.warning("No se pudieron convertir los datos de esa columna ver fechas válidas.")
+                except Exception as e:
+                    st.error(f"Error al procesar fechas: {e}")
+
     except Exception as e:
-        st.error(f"❌ Error al procesar el archivo: {e}")
-        st.write(e) # Show detailed error for debugging
+        st.error(f"❌ Error al leer el archivo: {e}")
+        st.info("Prueba combiando el Separador o la Codificación en el panel lateral.")
 else:
     # Empty State with Animation
     st.markdown("""
     <div style='text-align: center; margin-top: 50px;'>
-        <h1>👋 ¡Hola!</h1>
+        <h1>👋 ¡Bienvenido al Analizador Universal!</h1>
         <p style='font-size: 1.2rem; color: #a0a0a0;'>
-            Para comenzar, sube tu archivo CSV en el panel de la izquierda.
+            Sube cualquier archivo CSV (Energía, Agrícola, Monitoreo, etc.) y detectaremos la estructura automáticamente.
         </p>
         <div style='display: flex; justify-content: center; margin-top: 20px;'>
             <div style='
@@ -227,7 +293,7 @@ else:
                 align-items: center; 
                 justify-content: center; 
                 color: #4facfe;'>
-                📂 Tu archivo aquí
+                📂 Subir CSV
             </div>
         </div>
     </div>
