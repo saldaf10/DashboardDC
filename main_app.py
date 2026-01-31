@@ -59,13 +59,13 @@ if uploaded_file is not None:
         # Slice the dataframe
         df = df_original.head(sample_size)
         
-        # --- TOOL SELECTION ---
         st.sidebar.markdown("### 🛠️ 4. Herramientas")
         show_gen = st.sidebar.checkbox("📋 Vista General", value=True)
         show_cat = st.sidebar.checkbox("📊 Análisis Cualitativo", value=True)
         show_num = st.sidebar.checkbox("📈 Análisis Cuantitativo", value=True)
         show_rel = st.sidebar.checkbox("🔗 Relaciones", value=True)
         show_time = st.sidebar.checkbox("📅 Series de Tiempo", value=True)
+        show_ai = st.sidebar.checkbox("🤖 Asistente IA", value=False)
         
         # --- HEADER ---
         st.title("📊 Dashboard de Análisis Exploratorio")
@@ -90,6 +90,7 @@ if uploaded_file is not None:
         if show_num: tabs_config.append({"title": "📈 Análisis Cuantitativo", "key": "num"})
         if show_rel: tabs_config.append({"title": "🔗 Relaciones", "key": "rel"})
         if show_time: tabs_config.append({"title": "📅 Series de Tiempo", "key": "time"})
+        if show_ai: tabs_config.append({"title": "🤖 Asistente IA", "key": "ai"})
         
         if not tabs_config:
             st.warning("⚠️ Por favor selecciona al menos una herramienta en el panel lateral (Sección 4).")
@@ -324,6 +325,76 @@ if uploaded_file is not None:
                                 st.warning("No se pudieron convertir los datos de esa columna ver fechas válidas.")
                         except Exception as e:
                             st.error(f"Error al procesar fechas: {e}")
+
+            # === TAB 6: ASISTENTE IA ===
+            if "ai" in tabs_dict:
+                with tabs_dict["ai"]:
+                    st.markdown("### 🤖 Asistente de IA (Powered by Groq)")
+                    st.markdown("""
+                    <div style='background-color: rgba(0, 255, 127, 0.1); padding: 10px; border-radius: 5px; border-left: 3px solid #00ff7f;'>
+                        <small>Este asistente utiliza el modelo <b>llama-3.3-70b-versatile</b> para analizar tus datos en tiempo real.</small>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    api_key = st.text_input("Ingresa tu API Key de Groq:", type="password", help="Obtén tu key en https://console.groq.com/keys")
+                    
+                    if api_key:
+                        st.info("API Key detectada. Listo para analizar.")
+                        if st.button("🧠 Generar Análisis Automático"):
+                            with st.spinner("La IA está analizando tu dataset..."):
+                                try:
+                                    # Prepare Data Context (limited to save tokens)
+                                    from openai import OpenAI
+                                    
+                                    client = OpenAI(
+                                        base_url="https://api.groq.com/openai/v1",
+                                        api_key=api_key
+                                    )
+                                    
+                                    data_summary = f"""
+                                    Dataset Info:
+                                    - Rows: {df.shape[0]}, Columns: {df.shape[1]}
+                                    - Columns: {', '.join(df.columns)}
+                                    - Missing Values: {df.isnull().sum().to_dict()}
+                                    - Sample Data (first 5 rows):
+                                    {df.head().to_markdown()}
+                                    - Statistics:
+                                    {df.describe().to_markdown()}
+                                    """
+                                    
+                                    prompt = f"""
+                                    Act as an expert Data Scientist. Analyze the following dataset summary and provide:
+                                    1. 3 Key Observations/Trends.
+                                    2. Potential anomalies or data quality issues.
+                                    3. Suggestions for 2 specific advanced visualizations.
+                                    
+                                    Dataset:
+                                    {data_summary}
+                                    
+                                    Format the output in clear Markdown with emojis. Keep it concise but professional.
+                                    """
+                                    
+                                    completion = client.chat.completions.create(
+                                        model="llama-3.3-70b-versatile",
+                                        messages=[
+                                            {"role": "system", "content": "You are a helpful Data Analysis Assistant capable of finding hidden insights in CSV data."},
+                                            {"role": "user", "content": prompt}
+                                        ],
+                                        temperature=0.5,
+                                        max_tokens=1024,
+                                        top_p=1,
+                                        stream=False,
+                                        stop=None,
+                                    )
+                                    
+                                    response = completion.choices[0].message.content
+                                    st.markdown("### 📝 Resultados del Análisis")
+                                    st.markdown(response)
+                                    
+                                except Exception as e:
+                                    st.error(f"Error al conectar con la IA: {e}")
+                    else:
+                        st.warning("⚠️ Necesitas una API Key de Groq para usar esta funcionalidad.")
 
     except Exception as e:
         st.error(f"❌ Error al leer el archivo: {e}")
