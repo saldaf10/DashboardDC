@@ -110,7 +110,18 @@ if uploaded_file is not None:
                     with col4: st.metric("Celdas Vacías", df.isnull().sum().sum())
 
                     st.markdown("### 🔍 Vista Previa")
-                    st.dataframe(df.head(10), use_container_width=True)
+                    
+                    # Slider for preview rows
+                    rows_to_show = st.slider(
+                        "Filas a visualizar en la tabla:", 
+                        min_value=5, 
+                        max_value=len(df), 
+                        value=10, 
+                        step=5,
+                        key="slider_preview_rows"
+                    )
+                    
+                    st.dataframe(df.head(rows_to_show), use_container_width=True)
                     
                     # Missing Values Chart
                     st.subheader("⚠️ Mapa de Valores Nulos")
